@@ -61,15 +61,20 @@ contract FundMe{
 
     mapping(address=>uint256) public addressToAmountFunded;
     address public owner;
+    address[] public funders;
     constructor() public {
         owner=msg.sender;
     }
 
-
+    modifier onlyOwner{
+      require(msg.sender==owner);
+      _;
+    }
      function fund() public payable{
          uint256 minimumUSD=50*10**18;
          require(getConversionRate(msg.value)>=minimumUSD,"You need to spend more ETH!");
         addressToAmountFunded[msg.sender]+=msg.value;
+        funders.push(msg.sender);
     }
 
     function getVersion() public view returns(uint256){
@@ -89,8 +94,12 @@ contract FundMe{
         return ethAmountInUsd;
     }
 
-    function withdraw() payable public {
-        require(msg.sender==owner);
+    function withdraw() payable public onlyOwner {
         msg.sender.transfer(address(this).balance);
+        for(uint256 funderIndex=0;funderIndex<funders.length;funderIndex++){
+          address funder=funders[funderIndex];
+          addressToAmountFunded[funder]=0;
+        }
+        funders=new address[](0);
     }
 }
